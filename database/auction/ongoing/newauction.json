@@ -1,0 +1,17 @@
+{
+  "_comments": [
+    "itemname: \ud310\ub9e4\ud558\ub294 \ubb3c\uac74\uc758 \uc774\ub984",
+    "startingprice: \uc2dc\uc791 \uac00\uaca9",
+    "auctionid: \uacbd\ub9e4 \uc544\uc774\ub514",
+    "best_bet: \ucd5c\uace0 \uc81c\uc2dc \uae08\uc561 (\uc544\uc774\ub514: \uac00\uaca9)",
+    "history: \uc544\uc774\ub514:\uac00\uaca9"
+  ],
+  "itemname": null,
+  "startingprice": 0,
+  "auctionid": 0,
+  "best_bet": {
+    "userid": 0,
+    "price": 0
+  },
+  "history": {}
+}
