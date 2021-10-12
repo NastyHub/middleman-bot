@@ -10,18 +10,22 @@
   "startingprice": 0,
   "auctionid": 0,
   "auctionchannel": 0,
-  
+  "bidid": 0,
   "best_bet": {
     "userid": 0,
     "price": 0,
     "bidid": 0
   },
-
   "history": [
     {
       "userid": 0,
       "price": 0,
       "bidid": 0
     }
-  ]
+  ],
+  "winner": {
+    "userid": 0,
+    "price": 0,
+    "bidid": 0
+  }
 }

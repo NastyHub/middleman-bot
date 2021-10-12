@@ -24,6 +24,8 @@ category_list = {
 ##########################################################################
 
 #USEFUL FUNCTIONS
+##########################################################################
+#Auction-Related
 def joinlist(thislist):
     x = ""
     for i in thislist:
@@ -80,18 +82,16 @@ def checkowner(enterownerid):
     else:
         return False
 
-def deletebid(historylist, bidid):
-    for i in historylist:
-        getbidid =i["bidid"]
+def checkifauctionexists(auctionid):
+    supportbridge = "database/auction/ongoing/"
+    bidid = str(auctionid)
 
-        if getbidid == bidid:
-            historylist.remove(i)
+    if os.path.isfile(supportbridge+f"{bidid}.json"):
+        return True
+    else:
+        return False
 
-            return historylist
-        else:
-            pass
-    return False
-
+##########################################################################
 @client.event
 async def on_ready():
     game = discord.Game(name = "판매 돕는 중")
@@ -144,7 +144,7 @@ async def postauction(ctx, auctionchannel:discord.TextChannel = None, startingpr
 
             await targetchannel.send("@everyone")
             embed = discord.Embed(
-                title = f"새로운 경매 | {itemtosell}",
+                title = f"새로운 경매 | **{itemtosell}**",
                 description = f"새로운 경매가 나왔습니다\n```아이템: {itemtosell}\n시작가격: {convertedprice}\n경매아이디: {currentid}```\n경매참여: `$경매참여 경매아이디 가격`\n경매정보: `$경매정보 경매아이디`",
                 color = discord.Color.from_rgb(0, 255, 0)
             )
@@ -159,54 +159,66 @@ async def postauction(ctx, auctionchannel:discord.TextChannel = None, startingpr
                 color = discord.Color.from_rgb(255, 0, 0)
             )
             embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
 
+#경매차단 명령어 테스트 바람
 @client.command(aliases=["경매차단"])
 async def blacklistauction(ctx, target:discord.Member = None):
+    if target != None:
+        if checkowner(ctx.author.id):
+            path = "database/auction/blacklist/blacklist.json"
 
-    if checkowner(ctx.author.id):
-        path = "database/auction/blacklist.blacklist.json"
+            with open(path) as f:
+                r = json.load(f)
+                f.close()
+            
+            if target.id in r:
+                r.remove(target.id)
 
-        with open(path) as f:
-            r = json.load(f)
-            f.close()
-        
-        if target.id in r:
-            r.remove(target.id)
+                embed = discord.Embed(
+                    title = f"블랙리스트 해제",
+                    description = f"{target.mention}님은 다시 경매 명령어를 사용할 수 있습니다.",
+                    color = discord.Color.from_rgb(0, 255, 0)
+                )
+                embed.set_footer(text=f"NastyCore, The Next Innovation")
+                await ctx.send(embed=embed)
+            else:
+                r.append(target.id)
 
-            embed = discord.Embed(
-                title = f"블랙리스트 해제",
-                description = f"{target.mention}님은 다시 경매 명령어를 사용할 수 있습니다.",
-                color = discord.Color.from_rgb(0, 255, 0)
-            )
-            embed.set_footer(text=f"NastyCore, The Next Innovation")
-            await ctx.send(embed=embed)
+                embed = discord.Embed(
+                    title = f"블랙리스트 추가",
+                    description = f"{target.mention}님은 이제 경매 명령어를 사용할 수 없습니다.",
+                    color = discord.Color.from_rgb(0, 255, 0)
+                )
+                embed.set_footer(text=f"NastyCore, The Next Innovation")
+                await ctx.send(embed=embed)
+
+            with open(path, "w") as f:
+                json.dump(r, f, indent=2)
+                f.close()
         else:
-            r.append(target.id)
-
             embed = discord.Embed(
-                title = f"블랙리스트 추가",
-                description = f"{target.mention}님은 이제 경매 명령어를 사용할 수 없습니다.",
-                color = discord.Color.from_rgb(0, 255, 0)
+                title = f"에러 | 주인 전용 명령어",
+                description = f"경매생성 명령어는 주인만 사용 가능한 명령어입니다.",
+                color = discord.Color.from_rgb(255, 0, 0)
             )
             embed.set_footer(text=f"NastyCore, The Next Innovation")
             await ctx.send(embed=embed)
-
-        with open(path, "w") as f:
-            json.dump(r, f, indent=2)
-            f.close()
     else:
         embed = discord.Embed(
-            title = f"에러 | 주인 전용 명령어",
-            description = f"경매생성 명령어는 주인만 사용 가능한 명령어입니다.",
-            color = discord.Color.from_rgb(255, 0, 0)
+            title = f"에러 | 양식오류",
+            description = f"`$경매차단 @유저멘션`",
+            color = discord.Color.from_rgb(255, 255, 0)
         )
         embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)      
 
-@client.command(aliases=["입찰삭제"])
-async def forcechange(ctx, auctionid=None, bidid=None):
+
+#입찰삭제 명령어 테스트 바람
+@client.command(aliases=["최고가설정"])
+async def sethighest(ctx, auctionid=None, target:discord.Member=None, price=None):
     if checkowner(ctx.author.id):
-        bidid = int(bidid)
-        if auctionid != None and bidid != None:
+        if auctionid != None and target != None and price != None:
             decidedpath = f"database/auction/ongoing/{auctionid}.json"
 
             with open(decidedpath, encoding='UTF8') as f:
@@ -216,50 +228,34 @@ async def forcechange(ctx, auctionid=None, bidid=None):
             historylist = r["history"]
             highestbid = r["best_bet"]
 
-            #check if the target bid is the currently the highest bid at the moment
+            if checkifauctionexists(int(auctionid)):
+                highestbid["userid"] = target.id
+                highestbid["price"] = int(price)
 
-            historylist = deletebid(historylist, bidid)
+                await ctx.send("ok")
 
-            if historylist != False:
-                if highestbid["bidid"] == bidid:
-                    historylist = historylist.reverse()
-
-                    userid = historylist[0]["userid"]
-                    price = historylist[0]["price"]
-                    bidid2 = historylist[0]["bidid"]
-
-                    historylist = historylist.reverse()
-
-                    highestbid["userid"] = userid
-                    highestbid["price"] = price
-                    highestbid["bidid"] = bidid2
-                
-                with open(decidedpath, "w", encoding='UTF-8') as f:
+                with open(decidedpath, "w") as f:
                     json.dump(r, f, indent=2)
                     f.close()
-                
-                embed = discord.Embed(
-                    title = f"삭제 성공",
-                    description = f"삭제 완료했습니다",
-                    color = discord.Color.from_rgb(0, 255, 0)
-                )
-                embed.set_footer(text=f"NastyCore, The Next Innovation")
+
             else:
                 embed = discord.Embed(
                     title = f"에러 | 찾지못함",
                     description = f"해당 입찰아이디를 찾지 못했습니다",
                     color = discord.Color.from_rgb(255, 255, 0)
                 )
-                embed.set_footer(text=f"NastyCore, The Next Innovation")       
+                embed.set_footer(text=f"NastyCore, The Next Innovation")
+                await ctx.send(embed=embed)     
 
 
         else:
             embed = discord.Embed(
                 title = f"에러 | 양식오류",
-                description = f"`$입찰삭제 경매아이디 입찰아이디`",
+                description = f"`$최고가설정 경매아이디 @유저 가격`",
                 color = discord.Color.from_rgb(255, 255, 0)
             )
-            embed.set_footer(text=f"NastyCore, The Next Innovation")   
+            embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
 
     else:
         embed = discord.Embed(
@@ -267,7 +263,219 @@ async def forcechange(ctx, auctionid=None, bidid=None):
             description = f"경매생성 명령어는 주인만 사용 가능한 명령어입니다.",
             color = discord.Color.from_rgb(255, 0, 0)
         )
-        embed.set_footer(text=f"NastyCore, The Next Innovation")   
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
+
+#경매종료 명령어 테스트 바람
+@client.command(aliases=["경매종료"])
+async def endauction(ctx, auctionid=None):
+    if checkowner(ctx.author.id):
+        if auctionid != None:
+            if checkifauctionexists(auctionid):
+                path = f"database/auction/ongoing/{auctionid}.json"
+
+                with open(path) as f:
+                    r = json.load(f)
+                    f.close()
+                
+                itemname = r["itemname"]
+                startingprice = r["startingprice"]
+                auctionid = auctionid
+                auctionchannel = r["auctionchannel"]
+
+                best_bet_dict = r["best_bet"]
+                history_list = r["history"]
+                winner_dict = r["winner"]
+
+                #winner info
+                winner_id = best_bet_dict["userid"]
+                winner_price = best_bet_dict["price"]
+                winner_id = best_bet_dict["bidid"]
+
+
+                targetchannel = discord.utils.get(client.get_all_channels(), id = auctionchannel)
+
+                altuserid = r["best_bet"]["userid"]
+                targetuser = await client.fetch_user(int(altuserid))
+
+                targetuserdisplayname = targetuser.display_name
+
+                startingprice = formatmoney(startingprice)
+                finalprice = formatmoney(winner_price)
+
+                #transfer to winner_dict
+                winner_dict["userid"] = winner_id
+                winner_dict["price"] = winner_price
+                winner_dict["bidid"] = winner_id
+
+                await targetchannel.send("@everyone")
+                embed = discord.Embed(
+                    title = f"경매 종료 | **{targetuserdisplayname}**🎉",
+                    description = f"경매 정보:\n```판매 제품: {itemname}\n시작가격: {startingprice}\n낙찰가: {finalprice}\n입찰참여총횟수: {len(history_list)-1}```\n우승을 축하드립니다:\n```유저: {targetuser}\n유저아이디: {altuserid}```",
+                    color = discord.Color.from_rgb(0, 255, 0)
+                )
+                embed.set_footer(text=f"NastyCore, The Next Innovation")
+                await targetchannel.send(embed=embed)
+
+                os.remove(path)
+
+
+            else:
+                embed = discord.Embed(
+                    title = f"에러 | 존재하지 않는 경매 아이디",
+                    description = f"해당 경매 아이디는 존재하지 않습니다",
+                    color = discord.Color.from_rgb(255, 255, 0)
+                )
+                embed.set_footer(text=f"NastyCore, The Next Innovation")
+                await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title = f"에러 | 양식오류",
+                description = f"$경매종료 경매아이디",
+                color = discord.Color.from_rgb(255, 255, 0)
+            )
+            embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 주인 전용 명령어",
+            description = f"경매생성 명령어는 주인만 사용 가능한 명령어입니다.",
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
+##########################################################################
+#FOR EVERYONE
+
+@client.command(aliases=["경매정보"])
+async def auctioninfo(ctx, auctionid=None):
+    if auctionid != None:
+        if checkifauctionexists(auctionid):
+            path = f"database/auction/ongoing/{auctionid}.json"
+
+            with open(path) as f:
+                r = json.load(f)
+                f.close()
+            
+            itemname = r["itemname"]
+            startingprice = r["startingprice"]
+            bestpriceid = r["best_bet"]["userid"]
+            bestpriceprice = r["best_bet"]["price"]
+
+            startingprice = formatmoney(startingprice)
+            bestpriceprice = formatmoney(bestpriceprice)
+
+            targetuser = await client.fetch_user(int(bestpriceid))
+
+            embed = discord.Embed(
+                title = f"경매 정보",
+                description = f"판매 제품: {itemname}\n시작가: {startingprice}\n\n현재최고가: {targetuser}, {bestpriceprice}",
+                color = discord.Color.from_rgb(0, 255, 0)
+            )
+            embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
+
+
+        else:
+            embed = discord.Embed(
+                title = f"에러 | 존재하지 않는 경매 아이디",
+                description = f"해당 경매 아이디는 존재하지 않습니다",
+                color = discord.Color.from_rgb(255, 255, 0)
+            )
+            embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 양식오류",
+            description = f"`$경매정보 경매아이디`",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
+
+@client.command(aliases=["경매참여"])
+async def enterauction(ctx, auctionid=None, price=None):
+    if auctionid != None and price != None:
+
+        with open("database/auction/blacklist/blacklist.json") as f:
+            jsondata = json.load(f)
+            f.close()
+        
+        if ctx.author.id not in jsondata:
+            if checkifauctionexists(auctionid):
+                price = int(price)
+                formatprice = formatmoney(price)
+                path = f"database/auction/ongoing/{auctionid}.json"
+
+                with open(path) as f:
+                    r = json.load(f)
+                    f.close()
+
+                bestpriceprice = r["best_bet"]["price"]
+
+                history_list = r["history"]
+                currentbidid = r["bidid"]
+                targetchannel = r["auctionchannel"]
+                targetchannel = discord.utils.get(client.get_all_channels(), id = int(targetchannel))
+
+                newbidid = currentbidid + 1
+
+                r["bidid"] = newbidid
+
+                bestformatprice = formatmoney(bestpriceprice)
+                
+                if int(bestpriceprice) >= int(price):
+                    embed = discord.Embed(
+                        title = f"에러 | 최고가보다 낮음",
+                        description = f"현재 최고가({bestformatprice})보다 높게 설정해 주세요.",
+                        color = discord.Color.from_rgb(255, 255, 0)
+                    )
+                    embed.set_footer(text=f"NastyCore, The Next Innovation")
+                    await ctx.send(embed=embed)
+                else:
+                    format_dict = {
+                        "userid": ctx.author.id,
+                        "price": int(price),
+                        "bidid": newbidid
+                    }
+
+                    history_list.append(format_dict)
+
+                    r["best_bet"]["price"] = int(price)
+                    r["best_bet"]["userid"] = ctx.author.id
+                    r["best_bet"]["bidid"] = currentbidid
+
+                    with open(path, "w") as f:
+                        json.dump(r, f, indent=2)
+                        f.close()
+
+                    embed = discord.Embed(
+                        title = f"새로운 경매 최고가",
+                        description = f"{ctx.author.mention}님: {formatprice}\n입찰아이디: {newbidid}",
+                        color = discord.Color.from_rgb(0, 255, 0)
+                    )
+                    embed.set_footer(text=f"NastyCore, The Next Innovation")
+                    await targetchannel.send(embed=embed)
+
+                    await ctx.send("ㅇㅋ")
+
+
+            else:
+                embed = discord.Embed(
+                    title = f"에러 | 존재하지 않는 경매 아이디",
+                    description = f"해당 경매 아이디는 존재하지 않습니다",
+                    color = discord.Color.from_rgb(255, 255, 0)
+                )
+                embed.set_footer(text=f"NastyCore, The Next Innovation")
+                await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 양식오류",
+            description = f"`$경매참여 경매아이디 가격`",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
 
 
 
