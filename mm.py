@@ -5,7 +5,12 @@ from discord.ext import commands, tasks
 import time
 import asyncio
 
-client = commands.Bot(command_prefix = '$')
+intents = discord.Intents.default()
+intents.typing = True
+intents.presences = True
+intents.members = True
+
+client = commands.Bot(command_prefix = '$', intents=intents)
 client.remove_command('help')
 
 ##########################################################################
@@ -99,6 +104,63 @@ async def on_ready():
 
     print("Ready to Run")
 
+
+@client.event
+async def on_raw_reaction_add(payload):
+    user = client.get_user(payload.user_id)
+    openticketmsgid = 900642274503983114
+    if not user.bot:
+        if payload.message_id == openticketmsgid:
+            if payload.emoji.name == "☑️": #EDIT THIS TOO
+                channel = client.get_channel(payload.channel_id)
+                message = await channel.fetch_message(payload.message_id)
+                user = client.get_user(payload.user_id)
+
+                await message.remove_reaction("☑️", user)
+
+                try:
+                    ticketchannel = discord.utils.get(client.get_all_channels(), name = str(payload.user_id))
+
+                    await ticketchannel.send(f"{user.mention} 현재 진행중인 채널이 있습니다")
+                except:
+                    guild = client.get_guild(payload.guild_id)
+                    category = discord.utils.get(guild.categories, id=896374909897420831)
+                    await guild.create_text_channel(str(payload.user_id), category=category)
+
+                    targetchannel = ticketchannel = discord.utils.get(client.get_all_channels(), name = str(payload.user_id))
+                    await targetchannel.set_permissions(user, read_messages=True, send_messages=True)
+
+                    await targetchannel.send("@everyone")
+
+                    embed = discord.Embed(
+                        title = f"중재 요청",
+                        description = f"{user.mention}님, 중재 요청을 해주셔서 감사합니다. 초대할 다른 사람의 유저 아이디를 여기 보내주세요.\n*그 사람은 서버에 있어야 합니다*\n주인용 명령어: `$유저추가 유저아이디`",
+                        color = discord.Color.from_rgb(0, 255, 0)
+                    )
+                    embed.set_footer(text="NastyCore, The Next Innovation")
+                    embed1 = await targetchannel.send(embed=embed)
+                    await embed1.add_reaction("🔒")
+        else:
+            emojilist = ["🔒"]
+            if payload.emoji.name in emojilist:
+                user = client.get_user(payload.user_id)
+                guild = client.get_guild(payload.guild_id)
+                member = guild.get_member(payload.user_id)
+                channel = client.get_channel(payload.channel_id)
+                message = await channel.fetch_message(payload.message_id)
+                
+                targetchannel = discord.utils.get(client.get_all_channels(), id = payload.channel_id)
+
+                if int(payload.user_id) == 605217750847062049 or int(payload.user_id) == 631441731350691850:
+                    if payload.emoji.name == "🔒":
+                        await targetchannel.delete()
+                else:
+                    try:
+                        await targetchannel.send("현재 이 기능의 악용을 막기 위해 유저 스스로 채널을 닫을수없게 설정했습니다")
+                        if payload.emoji.name == "🔒":
+                            await message.remove_reaction("🔒", user)
+                    except:
+                        pass
 ##########################################################################
 #OWNER ONLY
 
@@ -161,7 +223,6 @@ async def postauction(ctx, auctionchannel:discord.TextChannel = None, startingpr
             embed.set_footer(text=f"NastyCore, The Next Innovation")
             await ctx.send(embed=embed)
 
-#경매차단 명령어 테스트 바람
 @client.command(aliases=["경매차단"])
 async def blacklistauction(ctx, target:discord.Member = None):
     if target != None:
@@ -213,8 +274,6 @@ async def blacklistauction(ctx, target:discord.Member = None):
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)      
 
-
-#입찰삭제 명령어 테스트 바람
 @client.command(aliases=["최고가설정"])
 async def sethighest(ctx, auctionid=None, target:discord.Member=None, price=None):
     if checkowner(ctx.author.id):
@@ -266,7 +325,6 @@ async def sethighest(ctx, auctionid=None, target:discord.Member=None, price=None
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)
 
-#경매종료 명령어 테스트 바람
 @client.command(aliases=["경매종료"])
 async def endauction(ctx, auctionid=None):
     if checkowner(ctx.author.id):
@@ -344,6 +402,49 @@ async def endauction(ctx, auctionid=None):
         )
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)
+
+@client.command(aliases=["계정"])
+async def account(ctx):
+    if checkowner(ctx.author.id):
+        await ctx.reply("계정링크:\nhttps://www.roblox.com/users/2735986134/profile")
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 주인 전용 명령어",
+            description = f"경매생성 명령어는 주인만 사용 가능한 명령어입니다.",
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
+
+@client.command(aliases=["유저추가"])
+async def adduser(ctx, userid = None):
+    if checkowner(ctx.author.id):
+        if userid != None:
+            targetchannel = ctx.channel
+
+            user = await client.fetch_user(int(userid))
+
+            await targetchannel.set_permissions(user, read_messages=True, send_messages=True)
+
+            await ctx.send("해당 유저를 채널에 추가했습니다")
+
+        else:
+            embed = discord.Embed(
+                title = f"에러 | 양식오류",
+                description = f"$유저추가 디스코드",
+                color = discord.Color.from_rgb(255, 255, 0)
+            )
+            embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 주인 전용 명령어",
+            description = f"유저추가 명령어는 주인만 사용 가능한 명령어입니다.",
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
+
 ##########################################################################
 #FOR EVERYONE
 
@@ -476,9 +577,6 @@ async def enterauction(ctx, auctionid=None, price=None):
         )
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)
-
-
-
 
 
 
