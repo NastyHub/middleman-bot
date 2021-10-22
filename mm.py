@@ -20,6 +20,7 @@ client.remove_command('help')
 #SERVER INFO
 ownerid = 605217750847062049
 botownerid = 631441731350691850
+robloxaccountid = "2735986134"
 
 category_list = {
     "help" : 896390484908470292,
@@ -405,8 +406,9 @@ async def endauction(ctx, auctionid=None):
 
 @client.command(aliases=["계정"])
 async def account(ctx):
+    await ctx.message.delete()
     if checkowner(ctx.author.id):
-        await ctx.reply("계정링크:\nhttps://www.roblox.com/users/2735986134/profile")
+        await ctx.send(f"계정링크:\nhttps://www.roblox.com/users/{robloxaccountid}/profile")
     else:
         embed = discord.Embed(
             title = f"에러 | 주인 전용 명령어",
@@ -416,8 +418,31 @@ async def account(ctx):
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)
 
+@client.command(aliases=["계정아이디"])
+async def changeaccount(ctx, accountid = None):
+    if checkowner(ctx.author.id):
+        if accountid != None:
+            robloxaccountid = str(accountid)
+        else:
+            embed = discord.Embed(
+                title = f"에러 | 양식오류",
+                description = f"$계정아이디 계정아이디",
+                color = discord.Color.from_rgb(255, 255, 0)
+            )
+            embed.set_footer(text=f"NastyCore, The Next Innovation")
+            await ctx.send(embed=embed)
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 주인 전용 명령어",
+            description = f"유저추가 명령어는 주인만 사용 가능한 명령어입니다.",
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
+
 @client.command(aliases=["유저추가"])
 async def adduser(ctx, userid = None):
+    await ctx.message.delete()
     if checkowner(ctx.author.id):
         if userid != None:
             targetchannel = ctx.channel
@@ -431,7 +456,7 @@ async def adduser(ctx, userid = None):
         else:
             embed = discord.Embed(
                 title = f"에러 | 양식오류",
-                description = f"$유저추가 디스코드",
+                description = f"$유저추가 디스코드아이디",
                 color = discord.Color.from_rgb(255, 255, 0)
             )
             embed.set_footer(text=f"NastyCore, The Next Innovation")
