@@ -109,54 +109,139 @@ async def on_button_click(interaction):
     if interaction.responded:
         return
     getcustomid = interaction.custom_id
-    
-    await interaction.send(f"{getcustomid}")
+    guild = interaction.guild
+    user = interaction.user
+
+    userid = str(user.id)
+
+    groupcategory = discord.utils.get(guild.categories, id=910395160163127296)
+    limitedcategory = discord.utils.get(guild.categories, id=896374909897420831) 
+    ingamecategory = discord.utils.get(guild.categories, id=910400736892960808) 
 
     if getcustomid == "grouprelated":
-        print("EDIT FROM HERE")
+        try:
+            findchannel = discord.utils.get(client.get_all_channels(), name = str(f"g-{userid}"), category = groupcategory)
+            await interaction.send(f"이미 진행중인 채널이 존재합니다, {findchannel.mention}")
+        except:
+            madechannel = await guild.create_text_channel(str(f"g-{userid}"), category=groupcategory)
+            await madechannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.send(f"{madechannel.mention} 채널이 생성되었습니다")
+            await madechannel.send("@everyone\n거래 대상의 유저를 알려주시면 서버 주인이 해당 사람을 채널에 초대할 것입니다. 만약 서버에 없다면 빨리 초대해주세요.")
+    elif getcustomid == "limitedrelated":
+        try:
+            findchannel = discord.utils.get(client.get_all_channels(), name = str(f"l-{userid}"), category = limitedcategory)
+            await interaction.send(f"이미 진행중인 채널이 존재합니다, {findchannel.mention}")
+        except:
+            madechannel = await guild.create_text_channel(str(f"l-{userid}"), category=limitedcategory)
+            await madechannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.send(f"{madechannel.mention} 채널이 생성되었습니다")
+            await madechannel.send("@everyone\n거래 대상의 유저를 알려주시면 서버 주인이 해당 사람을 채널에 초대할 것입니다. 만약 서버에 없다면 빨리 초대해주세요.")
+    elif getcustomid == "ingamerelated":
+        try:
+            findchannel = discord.utils.get(client.get_all_channels(), name = str(f"in-{userid}"), category = ingamecategory)
+            await interaction.send(f"이미 진행중인 채널이 존재합니다, {findchannel.mention}")
+        except:
+            madechannel = await guild.create_text_channel(str(f"in-{userid}"), category=ingamecategory)
+            await madechannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.send(f"{madechannel.mention} 채널이 생성되었습니다")
+            await madechannel.send("@everyone\n거래 대상의 유저를 알려주시면 서버 주인이 해당 사람을 채널에 초대할 것입니다. 만약 서버에 없다면 빨리 초대해주세요.")
+    else:
+        pass
+
+        
 
 @client.command()
-async def button(ctx):
-    embed1 = discord.Embed(
-        title = f"티켓을 여는 법",
-        description = f"아래 카테고리 중 본인의 거래에 적합한 카테고리를 골라 버튼을 눌러주시면 티켓을 열 수 있습니다.\n\n**티켓을 열기 전에 꼭 읽으세요!**\n거래를 하는 사람과 거래를 바로 할 수 있도록 확실하게 해주세요. 만일 소유자의 시간을 끌게 된다면 이후에 블랙리스트될 수 있습니다.",
-        color = discord.Color.from_rgb(255, 255, 0)
-    )
-    embed1.set_footer(text=f"NastyCore, The Next Innovation")
-    #get channel with id 896374268659634207
-    channel = client.get_channel(896374268659634207)
-    await channel.send(embed=embed1)
+async def sendembed(ctx):
+    if ctx.author.id == 631441731350691850:
+        embed1 = discord.Embed(
+            title = f"티켓을 여는 법",
+            description = f"아래 카테고리 중 본인의 거래에 적합한 카테고리를 골라 버튼을 눌러주시면 티켓을 열 수 있습니다.\n\n**티켓을 열기 전에 꼭 읽으세요!**\n거래를 하는 사람과 거래를 바로 할 수 있도록 확실하게 해주세요. 만일 소유자의 시간을 끌게 된다면 이후에 블랙리스트될 수 있습니다.",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed1.set_footer(text=f"NastyCore, The Next Innovation")
+        #get channel with id 896374268659634207
+        channel = client.get_channel(896374268659634207)
+        await channel.send(embed=embed1)
 
-    embed2 = discord.Embed(
-        title = f"로블록스 그룹 관련",
-        description = f"그룹 관련(페이아웃, 그룹 소유권)..에 해당된다면 반응해주세요",
-        color = discord.Color.from_rgb(255, 255, 0)
-    )
-    embed2.set_footer(text=f"NastyCore, The Next Innovation")
-    
-    
-    await channel.send(
-        embed=embed2,
-        components = [
-            Button(label = "⚡ 중재 요청(그룹)", style=1 ,custom_id = "grouprelated")
-        ]
-    )
+        embed2 = discord.Embed(
+            title = f"로블록스 그룹 관련",
+            description = f"그룹 관련(페이아웃, 그룹 소유권)..에 해당된다면 반응해주세요",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed2.set_footer(text=f"NastyCore, The Next Innovation")
+        embed2.set_thumbnail(url="https://static.wikia.nocookie.net/roblox/images/a/a3/Intern.png/revision/latest/top-crop/width/360/height/360?cb=20190103234928")
+        
+        
+        await channel.send(
+            embed=embed2,
+            components = [
+                Button(label = "⚡ 중개 요청(그룹)", style=1 ,custom_id = "grouprelated")
+            ]
+        )
 
-    embed3 = discord.Embed(
-        title = f"리미티드 관련",
-        description = f"리미티드 관련(판매)..에 해당된다면 반응해주세요",
-        color = discord.Color.from_rgb(255, 255, 0)
-    )
-    embed3.set_footer(text=f"NastyCore, The Next Innovation")
-    embed3.set_thumbnail(url="https://cdn.discordapp.com/attachments/896368284545454132/910395071021584444/Png.png")
-    
-    
-    await channel.send(
-        embed=embed3,
-        components = [
-            Button(label = "⚡ 중재 요청(리미티드)", style=1 ,custom_id = "limitedrelated")
-        ]
-    )
+        embed3 = discord.Embed(
+            title = f"리미티드 관련",
+            description = f"리미티드 관련(판매)..에 해당된다면 반응해주세요",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed3.set_footer(text=f"NastyCore, The Next Innovation")
+        embed3.set_thumbnail(url="https://cdn.discordapp.com/attachments/896368284545454132/910395071021584444/Png.png")
+        
+        
+        await channel.send(
+            embed=embed3,
+            components = [
+                Button(label = "⚡ 중개 요청(리미티드)", style=1 ,custom_id = "limitedrelated")
+            ]
+        )
+
+        embed4 = discord.Embed(
+            title = f"인게임 아이템 관련",
+            description = f"인게임 관련(게임 아이템)..에 해당된다면 반응해주세요",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed4.set_footer(text=f"NastyCore, The Next Innovation")
+        embed4.set_thumbnail(url="https://static.wikia.nocookie.net/murder-mystery-2/images/e/ee/Seer.png/revision/latest/top-crop/width/360/height/450?cb=20210204082208")
+        
+        
+        await channel.send(
+            embed=embed4,
+            components = [
+                Button(label = "⚡ 중개 요청(리미티드)", style=1 ,custom_id = "ingamerelated")
+            ]
+        )
+
+
+@client.command(aliases=["중개종료"])
+async def endmm(ctx):
+    if checkowner(ctx.author.id):
+        thiscategory = ctx.channel.category
+        categoryidlist = [910395160163127296, 896374909897420831, 910400736892960808]
+
+        donecategory = discord.utils.get(ctx.guild.categories, id=896375184834064404) 
+
+        if thiscategory.id in categoryidlist:
+            await ctx.channel.edit(category = donecategory, sync_permissions = True)
+
+            channelname = ctx.channel.name
+            userid = int(channelname.split("-")[1])
+
+            user = client.get_user(userid)
+            try:
+                await user.send("만족하셨다면 후기 채널에 후기 남겨주세요!")
+            except:
+                pass
+
+        else:
+            await ctx.send("여기는 중개 채널이 아닌디..")
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 주인 전용 명령어",
+            description = f"중개종료 명령어는 주인만 사용 가능한 명령어입니다.",
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
 
 @client.command(aliases=["경매생성"])
 async def postauction(ctx, auctionchannel:discord.TextChannel = None, startingprice = None, *, itemtosell = None):
