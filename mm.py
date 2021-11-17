@@ -2,15 +2,14 @@ import discord
 import os
 import json
 from discord.ext import commands, tasks
-import time
-import asyncio
+from discord_components import DiscordComponents, ComponentsBot, Button, component, interaction
 
 intents = discord.Intents.default()
 intents.typing = True
 intents.presences = True
 intents.members = True
 
-client = commands.Bot(command_prefix = '$', intents=intents)
+client = ComponentsBot(command_prefix = '$', intents=intents)
 client.remove_command('help')
 
 ##########################################################################
@@ -105,65 +104,144 @@ async def on_ready():
 
     print("Ready to Run")
 
-
 @client.event
-async def on_raw_reaction_add(payload):
-    user = client.get_user(payload.user_id)
-    openticketmsgid = 900642274503983114
-    if not user.bot:
-        if payload.message_id == openticketmsgid:
-            if payload.emoji.name == "☑️": #EDIT THIS TOO
-                channel = client.get_channel(payload.channel_id)
-                message = await channel.fetch_message(payload.message_id)
-                user = client.get_user(payload.user_id)
+async def on_button_click(interaction):
+    if interaction.responded:
+        return
+    getcustomid = interaction.custom_id
+    guild = interaction.guild
+    user = interaction.user
 
-                await message.remove_reaction("☑️", user)
+    userid = str(user.id)
 
-                try:
-                    ticketchannel = discord.utils.get(client.get_all_channels(), name = str(payload.user_id))
+    groupcategory = discord.utils.get(guild.categories, id=910395160163127296)
+    limitedcategory = discord.utils.get(guild.categories, id=896374909897420831) 
+    ingamecategory = discord.utils.get(guild.categories, id=910400736892960808) 
 
-                    await ticketchannel.send(f"{user.mention} 현재 진행중인 채널이 있습니다")
-                except:
-                    guild = client.get_guild(payload.guild_id)
-                    category = discord.utils.get(guild.categories, id=896374909897420831)
-                    await guild.create_text_channel(str(payload.user_id), category=category)
+    if getcustomid == "grouprelated":
+        try:
+            findchannel = discord.utils.get(client.get_all_channels(), name = str(f"g-{userid}"), category = groupcategory)
+            await interaction.send(f"이미 진행중인 채널이 존재합니다, {findchannel.mention}")
+        except:
+            madechannel = await guild.create_text_channel(str(f"g-{userid}"), category=groupcategory)
+            await madechannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.send(f"{madechannel.mention} 채널이 생성되었습니다")
+            await madechannel.send("@everyone\n거래 대상의 유저를 알려주시면 서버 주인이 해당 사람을 채널에 초대할 것입니다. 만약 서버에 없다면 빨리 초대해주세요.")
+    elif getcustomid == "limitedrelated":
+        try:
+            findchannel = discord.utils.get(client.get_all_channels(), name = str(f"l-{userid}"), category = limitedcategory)
+            await interaction.send(f"이미 진행중인 채널이 존재합니다, {findchannel.mention}")
+        except:
+            madechannel = await guild.create_text_channel(str(f"l-{userid}"), category=limitedcategory)
+            await madechannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.send(f"{madechannel.mention} 채널이 생성되었습니다")
+            await madechannel.send("@everyone\n거래 대상의 유저를 알려주시면 서버 주인이 해당 사람을 채널에 초대할 것입니다. 만약 서버에 없다면 빨리 초대해주세요.")
+    elif getcustomid == "ingamerelated":
+        try:
+            findchannel = discord.utils.get(client.get_all_channels(), name = str(f"in-{userid}"), category = ingamecategory)
+            await interaction.send(f"이미 진행중인 채널이 존재합니다, {findchannel.mention}")
+        except:
+            madechannel = await guild.create_text_channel(str(f"in-{userid}"), category=ingamecategory)
+            await madechannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.send(f"{madechannel.mention} 채널이 생성되었습니다")
+            await madechannel.send("@everyone\n거래 대상의 유저를 알려주시면 서버 주인이 해당 사람을 채널에 초대할 것입니다. 만약 서버에 없다면 빨리 초대해주세요.")
+    else:
+        pass
 
-                    targetchannel = ticketchannel = discord.utils.get(client.get_all_channels(), name = str(payload.user_id))
-                    await targetchannel.set_permissions(user, read_messages=True, send_messages=True)
+        
 
-                    await targetchannel.send("@everyone")
+@client.command()
+async def sendembed(ctx):
+    if ctx.author.id == 631441731350691850:
+        embed1 = discord.Embed(
+            title = f"티켓을 여는 법",
+            description = f"아래 카테고리 중 본인의 거래에 적합한 카테고리를 골라 버튼을 눌러주시면 티켓을 열 수 있습니다.\n\n**티켓을 열기 전에 꼭 읽으세요!**\n거래를 하는 사람과 거래를 바로 할 수 있도록 확실하게 해주세요. 만일 소유자의 시간을 끌게 된다면 이후에 블랙리스트될 수 있습니다.",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed1.set_footer(text=f"NastyCore, The Next Innovation")
+        #get channel with id 896374268659634207
+        channel = client.get_channel(896374268659634207)
+        await channel.send(embed=embed1)
 
-                    embed = discord.Embed(
-                        title = f"중재 요청",
-                        description = f"{user.mention}님, 중재 요청을 해주셔서 감사합니다. 초대할 다른 사람의 유저 아이디를 여기 보내주세요.\n*그 사람은 서버에 있어야 합니다*\n주인용 명령어: `$유저추가 유저아이디`",
-                        color = discord.Color.from_rgb(0, 255, 0)
-                    )
-                    embed.set_footer(text="NastyCore, The Next Innovation")
-                    embed1 = await targetchannel.send(embed=embed)
-                    await embed1.add_reaction("🔒")
+        embed2 = discord.Embed(
+            title = f"로블록스 그룹 관련",
+            description = f"그룹 관련(페이아웃, 그룹 소유권)..에 해당된다면 반응해주세요",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed2.set_footer(text=f"NastyCore, The Next Innovation")
+        embed2.set_thumbnail(url="https://static.wikia.nocookie.net/roblox/images/a/a3/Intern.png/revision/latest/top-crop/width/360/height/360?cb=20190103234928")
+        
+        
+        await channel.send(
+            embed=embed2,
+            components = [
+                Button(label = "⚡ 중개 요청(그룹)", style=1 ,custom_id = "grouprelated")
+            ]
+        )
+
+        embed3 = discord.Embed(
+            title = f"리미티드 관련",
+            description = f"리미티드 관련(판매)..에 해당된다면 반응해주세요",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed3.set_footer(text=f"NastyCore, The Next Innovation")
+        embed3.set_thumbnail(url="https://cdn.discordapp.com/attachments/896368284545454132/910395071021584444/Png.png")
+        
+        
+        await channel.send(
+            embed=embed3,
+            components = [
+                Button(label = "⚡ 중개 요청(리미티드)", style=1 ,custom_id = "limitedrelated")
+            ]
+        )
+
+        embed4 = discord.Embed(
+            title = f"인게임 아이템 관련",
+            description = f"인게임 관련(게임 아이템)..에 해당된다면 반응해주세요",
+            color = discord.Color.from_rgb(255, 255, 0)
+        )
+        embed4.set_footer(text=f"NastyCore, The Next Innovation")
+        embed4.set_thumbnail(url="https://static.wikia.nocookie.net/murder-mystery-2/images/e/ee/Seer.png/revision/latest/top-crop/width/360/height/450?cb=20210204082208")
+        
+        
+        await channel.send(
+            embed=embed4,
+            components = [
+                Button(label = "⚡ 중개 요청(리미티드)", style=1 ,custom_id = "ingamerelated")
+            ]
+        )
+
+
+@client.command(aliases=["중개종료"])
+async def endmm(ctx):
+    if checkowner(ctx.author.id):
+        thiscategory = ctx.channel.category
+        categoryidlist = [910395160163127296, 896374909897420831, 910400736892960808]
+
+        donecategory = discord.utils.get(ctx.guild.categories, id=896375184834064404) 
+
+        if thiscategory.id in categoryidlist:
+            await ctx.channel.edit(category = donecategory, sync_permissions = True)
+
+            channelname = ctx.channel.name
+            userid = int(channelname.split("-")[1])
+
+            user = client.get_user(userid)
+            try:
+                await user.send("만족하셨다면 후기 채널에 후기 남겨주세요!")
+            except:
+                pass
+
         else:
-            emojilist = ["🔒"]
-            if payload.emoji.name in emojilist:
-                user = client.get_user(payload.user_id)
-                guild = client.get_guild(payload.guild_id)
-                member = guild.get_member(payload.user_id)
-                channel = client.get_channel(payload.channel_id)
-                message = await channel.fetch_message(payload.message_id)
-                
-                targetchannel = discord.utils.get(client.get_all_channels(), id = payload.channel_id)
-
-                if int(payload.user_id) == 605217750847062049 or int(payload.user_id) == 631441731350691850:
-                    if payload.emoji.name == "🔒":
-                        await targetchannel.delete()
-                else:
-                    try:
-                        await targetchannel.send("현재 이 기능의 악용을 막기 위해 유저 스스로 채널을 닫을수없게 설정했습니다")
-                        if payload.emoji.name == "🔒":
-                            await message.remove_reaction("🔒", user)
-                    except:
-                        pass
-##########################################################################
-#OWNER ONLY
+            await ctx.send("여기는 중개 채널이 아닌디..")
+    else:
+        embed = discord.Embed(
+            title = f"에러 | 주인 전용 명령어",
+            description = f"중개종료 명령어는 주인만 사용 가능한 명령어입니다.",
+            color = discord.Color.from_rgb(255, 0, 0)
+        )
+        embed.set_footer(text=f"NastyCore, The Next Innovation")
+        await ctx.send(embed=embed)
 
 @client.command(aliases=["경매생성"])
 async def postauction(ctx, auctionchannel:discord.TextChannel = None, startingprice = None, *, itemtosell = None):
@@ -470,9 +548,6 @@ async def adduser(ctx, userid = None):
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)
 
-##########################################################################
-#FOR EVERYONE
-
 @client.command(aliases=["경매정보"])
 async def auctioninfo(ctx, auctionid=None):
     if auctionid != None:
@@ -602,14 +677,6 @@ async def enterauction(ctx, auctionid=None, price=None):
         )
         embed.set_footer(text=f"NastyCore, The Next Innovation")
         await ctx.send(embed=embed)
-
-
-
-
-
-
-
-
 
 
 
